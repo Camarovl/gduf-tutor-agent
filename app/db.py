@@ -57,24 +57,6 @@ def kp_id_set() -> set[str]:
     return {k["id"] for k in all_knowledge_points()}
 
 
-def find_relevant_kps(query: str, limit: int = 5) -> list[dict]:
-    """按名称或讲解内容模糊匹配知识点。
-
-    ⚠️ 仅适用于已切好的短词（如"导数"）。中文整句请直接调用
-    app.qa.retrieve_knowledge() —— 它做反向片段匹配，不受分词问题影响。
-    """
-    conn = get_conn()
-    try:
-        rows = conn.execute(
-            "SELECT id, name, explain, common_mistakes FROM knowledge_point "
-            "WHERE name LIKE ? OR explain LIKE ? LIMIT ?",
-            (f"%{query}%", f"%{query}%", limit),
-        ).fetchall()
-        return [dict(r) for r in rows]
-    finally:
-        conn.close()
-
-
 # ---------------------------------------------------------------- 错题本
 
 

@@ -25,12 +25,6 @@ def _format_context(kps: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
-def detect_off_topic(text: str) -> bool:
-    """粗判模型是否已经在拒绝。用于界面提示，不是硬约束。"""
-    keys = ("超出", "不在", "无法回答", "抱歉", "范围", "本课程", "这门课")
-    return any(k in text for k in keys)
-
-
 def retrieve_knowledge(question: str, limit: int = 4) -> list[dict]:
     """按名称匹配检索相关知识点，作为回答的上下文依据。
 
