@@ -130,7 +130,7 @@ git push -u origin <当前分支>            # 推到自己分支
 改完数据层或校验逻辑后，务必跑一次离线自检：
 
 ```bash
-python tests/offline_check.py     # 期望 27 项全 ✅、退出码 0
+python tests/offline_check.py     # 期望 33 项全 ✅、退出码 0
 ```
 
 ---
