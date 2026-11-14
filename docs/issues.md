@@ -41,7 +41,7 @@ completion_tokens: 800
 reasoning_tokens: 799      ← 全部预算花在内部推理上，可见输出为零
 ```
 
-**原因**：`qwen3.5-9b` 是带思维链的模型，会先在内部"想"很久再作答。
+**原因**：所用的是带思维链（chain-of-thought）的模型，会先在内部推理很久再输出可见内容。
 我们把 `max_tokens` 设成 800，它想完就没额度了。
 
 **处理**：默认值提到 `LLM_MAX_TOKENS=4000`；同时在 `llm_client.chat()` 里显式检测这个症状，

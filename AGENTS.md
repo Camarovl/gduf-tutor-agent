@@ -87,10 +87,10 @@ git push -u origin <当前分支>            # 推到自己分支
    `langchain_openai` 连 import 都过不去。模型调用统一走 `app/llm_client.py` 里的 openai SDK。
    详见 [docs/issues.md](docs/issues.md) 第 1 条。
 
-2. 🔴 **不要让发给模型的 messages 以 assistant 开头**。LM Studio 的 jinja 模板会报
+2. 🔴 **不要让发给模型的 messages 以 assistant 开头**。模型的 chat template 会报
    `No user query found in messages`。开场白只做界面渲染、不写进对话历史。见 issues.md 第 3 条。
 
-3. ⚠️ **思考型模型（qwen3.5 类）返回空内容不是 bug**。若 `finish_reason=length` 且
+3. ⚠️ **思考型模型返回空内容不是 bug**。若 `finish_reason=length` 且
    `reasoning_tokens` 接近 `completion_tokens`，说明 token 全花在内部推理上了，
    应调大 `LLM_MAX_TOKENS`（默认已设 4000）或换非思考模型。
 

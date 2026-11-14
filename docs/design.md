@@ -87,7 +87,7 @@ M3 的 `GROUP BY` 会把它们算成三个知识点，掌握度统计彻底作�
 
 ### 6. 开场白不进对话历史
 
-LM Studio 的 jinja chat template 不接受以 assistant 开头的消息序列：
+多数模型服务用的 jinja chat template 不接受以 assistant 开头的消息序列：
 
 ```
 Error rendering prompt with jinja template: "No user query found in messages."

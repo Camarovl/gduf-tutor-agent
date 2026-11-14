@@ -37,7 +37,7 @@
 ```
 Streamlit 1.57        界面（纯 Python，无前端框架）
 SQLite                单文件数据库，裸 SQL，无 ORM
-openai SDK 1.109      走 OpenAI 兼容协议对接任意供应商（LM Studio / DeepSeek / ...）
+openai SDK 1.109      走 OpenAI 兼容协议，对接任意供应商（地址与密钥由使用者配置）
 pandas 2.3            表格与图表数据
 Dockerfile            python:3.11-slim 容器化
 ```
@@ -106,12 +106,13 @@ LLM_MAX_TOKENS=4000                # 思考型模型务必保持较大，见下�
 也可以不设文件、直接导出环境变量：
 
 ```powershell
-$env:LLM_BASE_URL="http://127.0.0.1:1234/v1"
-$env:LLM_API_KEY="lm"
-$env:LLM_MODEL="qwen/qwen3.5-9b"
+$env:LLM_BASE_URL="https://api.deepseek.com/v1"   # 以 /v1 结尾
+$env:LLM_API_KEY="sk-你的密钥"
+$env:LLM_MODEL="deepseek-chat"                    # 与供应商文档写法完全一致
 ```
 
-未配置时应用仍可打开，侧边栏会明确提示缺哪几项，不会崩溃。
+三项都是必填，代码中不提供任何默认地址或占位密钥 —— 缺项时应用会拒绝发起请求并列出缺哪几项。
+未配置时页面仍可正常打开，侧边栏给出明确提示，不会崩溃。
 
 ### 步骤 3 · 初始化演示数据
 
@@ -192,7 +193,7 @@ docker run -d -p 8501:8501 -e LLM_BASE_URL=... -e LLM_API_KEY=... -e LLM_MODEL=.
 诚实列出，详见 [docs/limitations.md](docs/limitations.md)：
 
 1. **拍照识别准确率依赖模型**。视觉能力弱的模型可能抽错题干，因此保留人工确认环节兜底。
-2. **思考型模型的 token 陷阱**：qwen3.5 类模型会把大量 token 花在内部推理上，
+2. **思考型模型的 token 陷阱**：带思维链的模型会把大量 token 花在内部推理上，
    `LLM_MAX_TOKENS` 太小时返回内容为空（`finish_reason=length`）。已在配置注释与界面提示中说明。
 3. **M4 生成的题目质量不稳定**，因此优先从本地题库抽题，仅在题库不足时调用模型，且必须通过
    "可客观判定"校验才采用。
@@ -219,4 +220,4 @@ docker run -d -p 8501:8501 -e LLM_BASE_URL=... -e LLM_API_KEY=... -e LLM_MODEL=.
 
 ## 八、参考填法速查
 
-`.env.example` 内含两种可直接照抄的配置方案（本地 LM Studio / 在线 API）与三条实测踩坑记录。
+`.env.example` 说明了三项必填变量的含义、可选参数默认值，以及三条实测踩坑的排障线索。
