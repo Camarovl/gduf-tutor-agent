@@ -16,7 +16,8 @@ env/
 data/*.db
 data/*.db-journal
 data/*.sqlite3
-assets/uploads/
+assets/uploads/*
+!assets/uploads/.gitkeep
 
 # IDE 与系统垃圾
 .idea/

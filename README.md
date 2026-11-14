@@ -42,9 +42,9 @@ pandas 2.3            表格与图表数据
 Dockerfile            python:3.11-slim 容器化
 ```
 
-⚠️ **没有使用 LangChain**。本机 langchain 0.2.16 与 langchain-core 0.3.86 混用 pydantic v1/v2，
-import 阶段即报 `RuntimeError: no validator found for BaseLanguageModel`。改用 openai SDK 直连后
-链路更短，上下文如何拼装也一目了然 —— 详见 [docs/design.md](docs/design.md)。
+⚠️ **没有使用 LangChain**。`langchain` 0.2.x 内部依赖 pydantic v1，而 `langchain-core` 0.3.x 起
+改用 v2，两者混装在 import 阶段即报 `RuntimeError: no validator found for BaseLanguageModel`。
+改用 openai SDK 直连后链路更短，上下文如何拼装也一目了然 —— 详见 [docs/design.md](docs/design.md)。
 
 ### 目录结构
 
@@ -63,7 +63,7 @@ import 阶段即报 `RuntimeError: no validator found for BaseLanguageModel`。�
 ├── data/
 │   ├── knowledge_points.json   21 个知识点（含讲解骨架与常见误区）
 │   └── question_bank.json      12 道题（选项与标准答案自洽）
-├── tests/offline_check.py  离线自检 27 项，不需要模型服务
+├── tests/offline_check.py  离线自检 33 项，不需要模型服务
 ├── docs/                   方案设计、问题记录、未完成说明
 ├── .env.example            配置模板（复制为 .env 填写）
 ├── requirements.txt        版本写死
@@ -116,6 +116,10 @@ $env:LLM_MODEL="deepseek-chat"                    # 与供应商文档写法完�
 
 ### 步骤 3 · 初始化演示数据
 
+Windows 中文系统的控制台默认 GBK 编码，而脚本输出含 emoji 状态标记。
+本项目已在两个脚本顶部自动重配置为 UTF-8，正常情况下无需额外设置；
+若你的环境仍报 `UnicodeEncodeError`，先执行 `$env:PYTHONIOENCODING="utf-8"`。
+
 ```bash
 python seed_data.py
 ```
@@ -158,7 +162,7 @@ streamlit run streamlit_app.py
 | V4 | ② 页修改自动识别的知识点后再入库 | 以修改结果为准（确认环节生效） |
 | V5 | ③ 页查看掌握度表 | 21 行全部出现（含从未练过的），薄弱前三有红标 |
 | V6 | ④ 页点「生成针对性练习」→ 故意答错一题 → 提交 | 判分正确、该知识点正确率下降、错题本新增一条 |
-| V7 | 命令行 `python tests/offline_check.py` | 27 项全 ✅，退出码 0 |
+| V7 | 命令行 `python tests/offline_check.py` | 33 项全 ✅，退出码 0 |
 
 ### 离线自检（不需要模型服务）
 
@@ -173,11 +177,27 @@ M2 七种畸形输出是否都被拒、M4 判分逻辑、以及未配置时的�
 
 ## 五、Docker 运行
 
-```bash
+> ⚠️ **本项目的 Dockerfile 尚未经实机构建验证** —— 当前环境未安装 Docker，
+> 以下命令按文档编写但从未跑通。提交前必须在装了 Docker 的机器上完整执行一遍。
+
+```powershell
+# Windows PowerShell
 docker build -t gduf-tutor .
-docker run -d -p 8501:8501 -e LLM_BASE_URL=... -e LLM_API_KEY=... -e LLM_MODEL=... \
-           -v %cd%/data:/app/data gduf-tutor
+docker run -d -p 8501:8501 -e LLM_BASE_URL="https://..." -e LLM_API_KEY="sk-..." `
+           -e LLM_MODEL=你配置的模型名 -v "${PWD}\data:/app/data" --name tutor gduf-tutor
+docker exec tutor python seed_data.py     # 容器内首次需灌演示数据
 ```
+
+```bash
+# Linux / macOS
+docker build -t gduf-tutor .
+docker run -d -p 8501:8501 -e LLM_BASE_URL="https://..." -e LLM_API_KEY="sk-..." \
+           -e LLM_MODEL=你配置的模型名 -v "$(pwd)/data:/app/data" --name tutor gduf-tutor
+docker exec tutor python seed_data.py
+```
+
+两种 shell 的当前目录变量写法不同（PowerShell `$PWD`、cmd `%cd%`、bash `$(pwd)`），
+照自己用的那个抄，别混用。
 
 | 项 | 值 |
 |---|---|
@@ -207,14 +227,14 @@ docker run -d -p 8501:8501 -e LLM_BASE_URL=... -e LLM_API_KEY=... -e LLM_MODEL=.
 
 | 代号 | 职责 | 主要负责文件 |
 |---|---|---|
-| A（组长） | 定范围、催进度、拍板砍功能、答辩主讲、合并 PR | `docs/` |
+| A（维护者） | 定范围、催进度、拍板砍功能、对外讲解、合并 PR | `docs/` |
 | B | 模型调用封装、prompt 设计与调优、输出校验 | `app/llm_client.py`、`app/prompts.py`、`app/schemas.py` |
 | C | 表结构、归类规则、统计口径 | `schema.sql`、`app/db.py`、`app/intake.py`、`app/profile.py` |
 | D | 页面交互、图片上传、演示数据 | `streamlit_app.py`、`seed_data.py`、`data/*.json` |
 | E | 仓库规范、三个 ignore、Dockerfile、部署、README | `Dockerfile`、`README.md`、`.gitignore` |
 
 协作规矩见 [docs/collaboration.md](docs/collaboration.md)：一人一分支、改动走 PR、
-由组长合并、全组禁用 `git push --force`。
+由维护者合并、全员禁用 `git push --force`。
 
 ---
 

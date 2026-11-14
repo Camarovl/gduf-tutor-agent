@@ -11,9 +11,19 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+# 🔴 Windows 控制台默认 GBK，打印 ✅❌🔴 会抛 UnicodeEncodeError 退出码 1。
+#    README 的 V7 验证步骤就是跑本脚本，必须先兜住编码。
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        PASS, FAIL = "✅", "❌"
+    except Exception:  # noqa: BLE001 - 重配置失败退回 ASCII 标记
+        PASS, FAIL = "[OK]", "[X]"
+else:  # pragma: no cover - 极旧 Python
+    PASS, FAIL = "[OK]", "[X]"
+
 from app import db, profile, qa, schemas  # noqa: E402
 
-PASS, FAIL = "✅", "❌"
 results: list[tuple[str, bool]] = []
 
 

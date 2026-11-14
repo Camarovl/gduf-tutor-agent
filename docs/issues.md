@@ -4,7 +4,7 @@
 
 ---
 
-## 1. LangChain 全家桶在本机不可用
+## 1. LangChain 全家桶不可用（pydantic v1/v2 混装）
 
 **现象**
 
@@ -16,7 +16,7 @@ see `arbitrary_types_allowed` in Config
 炸在 `from langchain.memory import ConversationBufferMemory` 这一行，
 但调用栈显示真正失败的是同包内我们**完全没用到**的 `ConversationSummaryMemory`。
 
-**原因**：`langchain 0.2.16` 内部用 pydantic v1，`langchain-core 0.3.86` 用 v2。
+**原因**：`langchain` 0.2.x 内部用 pydantic v1，`langchain-core` 0.3.x 起用 v2；两者跨主版本混装就会冲突。
 Python 执行 `from package import X` 会跑完整个包的 `__init__.py`，因此被连坐。
 
 **尝试过的方案**

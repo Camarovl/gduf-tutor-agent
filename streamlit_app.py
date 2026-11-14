@@ -182,7 +182,6 @@ with tab_intake:
             steps_text = st.text_area(
                 "解题步骤（每行一步）", "\n".join(draft.solution_steps), height=120
             )
-            saved_name = st.session_state.get("uploaded_image_name")
             submit = st.form_submit_button("✅ 确认入库")
 
         if submit:
