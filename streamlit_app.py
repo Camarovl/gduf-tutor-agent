@@ -47,13 +47,11 @@ with st.sidebar:
             "```\n\n"
             "**② 直接设环境变量后重启本页面**\n"
             "```powershell\n"
-            '$env:LLM_BASE_URL="http://127.0.0.1:1234/v1"\n'
-            '$env:LLM_API_KEY="lm"\n'
-            '$env:LLM_MODEL="qwen/qwen3.5-9b"\n'
-            '$env:LLM_MAX_TOKENS="4000"\n'
+            '$env:LLM_BASE_URL="https://api.deepseek.com/v1"\n'
+            '$env:LLM_API_KEY="sk-你的密钥"\n'
+            '$env:LLM_MODEL="deepseek-chat"\n'
             "```\n"
-            "> ⚠️ `LLM_MODEL` 必须填你实际加载的模型名。思考型模型（如 qwen3.5）"
-            "需要较大的 `LLM_MAX_TOKENS`，否则 token 会全花在内部推理上、返回空内容。\n"
+            "> 三项均为必填，代码中不提供任何默认地址或占位密钥。\n"
         )
     else:
         st.success(f"已连接 `{llm_client._config()['model']}`")
@@ -79,7 +77,7 @@ tab_qa, tab_intake, tab_mastery, tab_practice = st.tabs(
 with tab_qa:
     if "messages" not in st.session_state:
         # 🔴 开场白不进历史：保证发给模型的序列以 user 开头，
-        #    否则 LM Studio 的 jinja 模板报 "No user query found in messages"
+        #    否则多数模型的 chat template 会报 "No user query found in messages"
         st.session_state["messages"] = []
 
     topics = qa.list_subject_topics()

@@ -3,12 +3,12 @@
 职责：
 1. 从环境变量读取配置（密钥绝不写进代码或仓库）
 2. 提供 chat() / vision() 两个入口，支持强制 JSON 输出
-3. JSON 非法时带原因重试，最终失败抛 LLMError 交上层降级
+3. JSON 非法时带原因回喂重试，最终失败抛 LLMError 交上层降级
 4. 每次调用记录 token 用量到 llm_log 表（答辩讲成本用这张表）
 
-思考型模型注意：qwen3.5-9b 这类模型会把大量 token 花在内部推理上。
-若返回内容为空且 finish_reason == 'length'，说明 max_tokens 不够它"想完再答"，
-调大 LLM_MAX_TOKENS（建议 4000）或换非思考模型（如 gemma-3-12b）。
+对接方式：任何兼容 OpenAI Chat Completions 协议的服务均可，
+只需配置 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL 三个环境变量。
+未配置时本模块拒绝发起请求并给出明确提示，不会静默使用占位值。
 """
 
 from __future__ import annotations
@@ -19,8 +19,6 @@ import time
 from dataclasses import dataclass, field
 
 from openai import OpenAI
-
-# ---------------------------------------------------------------- 异常与结果
 
 
 class LLMError(RuntimeError):
@@ -39,39 +37,45 @@ class LLMResult:
 
 # ---------------------------------------------------------------- 配置
 
+_REQUIRED_ENV = ("LLM_BASE_URL", "LLM_API_KEY", "LLM_MODEL")
+
 
 def _config() -> dict:
-    """集中读取环境变量。未设置时给出可跑通的默认值。"""
+    """集中读取环境变量。三项必填，无默认值。"""
     return {
-        "base_url": os.environ.get("LLM_BASE_URL", ""),      # 🔴 必填：留空会报错
-        "api_key": os.environ.get("LLM_API_KEY", ""),        # 🔴 必填：留空会报错
-        "model": os.environ.get("LLM_MODEL", ""),            # 🔴 必填：填供应商的模型名
+        "base_url": os.environ.get("LLM_BASE_URL", "").strip(),
+        "api_key": os.environ.get("LLM_API_KEY", "").strip(),
+        "model": os.environ.get("LLM_MODEL", "").strip(),
         "timeout": int(os.environ.get("LLM_TIMEOUT", "120")),
+        # 思考型模型会把大量 token 花在内部推理上，预算过小会导致可见输出为空
         "max_tokens": int(os.environ.get("LLM_MAX_TOKENS", "4000")),
         "temperature": float(os.environ.get("LLM_TEMPERATURE", "0.0")),
     }
 
 
-def is_configured() -> bool:
-    """界面用它决定是正常问答还是提示用户去配环境。"""
-    c = _config()
-    return bool(c["base_url"] and c["api_key"] and c["model"])
-
-
 def missing_config_keys() -> list[str]:
     """返回尚未配置的变量名，供界面精确提示缺哪几项。"""
-    names = {"LLM_BASE_URL": "base_url", "LLM_API_KEY": "api_key", "LLM_MODEL": "model"}
-    c = _config()
-    return [env for env, key in names.items() if not c[key]]
+    return [k for k in _REQUIRED_ENV if not os.environ.get(k, "").strip()]
+
+
+def is_configured() -> bool:
+    """界面用它决定是正常问答还是提示用户去配环境。"""
+    return not missing_config_keys()
+
+
+def config_error() -> str:
+    return (
+        "模型服务未配置：缺少 " + "、".join(missing_config_keys()) + "。\n"
+        "请复制 .env.example 为 .env 并填写三项必填变量"
+        "（LLM_BASE_URL / LLM_API_KEY / LLM_MODEL），"
+        "或直接导出环境变量后重启应用。详见 README「步骤 2 · 配置模型服务」。"
+    )
 
 
 def _client() -> OpenAI:
+    if not is_configured():
+        raise LLMError(config_error())
     c = _config()
-    if not (c["base_url"] and c["api_key"] and c["model"]):
-        raise LLMError(
-            "模型服务未配置。请设置环境变量 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL"
-            "（本地 LM Studio 则填 http://127.0.0.1:1234/v1、任意非空值、实际模型名）。"
-        )
     return OpenAI(
         api_key=c["api_key"],
         base_url=c["base_url"],
@@ -97,9 +101,10 @@ def chat(
     参数
     ----
     messages   : [{"role": "system|user|assistant", "content": str}, ...]
-                 必须以 user 结尾；LM Studio 的 jinja 模板不接受以 assistant 开头的序列。
+                 对话部分必须以 user 结尾，且不能以 assistant 开头 ——
+                 多数 chat template 不接受没有 user 轮次的序列，会直接报错。
     json_mode  : True 时在 prompt 里追加 JSON 要求，并对返回值做解析校验。
-    validator  : callable(dict) -> str | None。返回错误信息则视为校验失败并重试。
+    validator  : callable(dict) -> str | None。返回错误信息视为校验失败并重试。
                  例：检查 knowledge_ids 是否都在候选集内。
     返回 LLMResult；全部重试失败抛 LLMError。
     """
@@ -124,7 +129,7 @@ def chat(
                 temperature=cfg["temperature"],
                 max_tokens=cfg["max_tokens"],
             )
-        except Exception as exc:  # noqa: BLE001 - 需要把各类 SDK 异常统一成 LLMError
+        except Exception as exc:  # noqa: BLE001 - 需把各类 SDK 异常统一成 LLMError
             last_err = f"{type(exc).__name__}: {exc}"
             if attempt < max_retry:
                 time.sleep(1.5 * (attempt + 1))
@@ -133,6 +138,7 @@ def chat(
 
         usage = getattr(resp, "usage", None)
         details = getattr(usage, "completion_tokens_details", None) if usage else None
+        finish = resp.choices[0].finish_reason if resp.choices else None
         result = LLMResult(
             text=(resp.choices[0].message.content or "").strip(),
             prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
@@ -142,12 +148,12 @@ def chat(
         )
         log_call(purpose, result)
 
-        # 思考型模型的典型症状：token 全花在 reasoning 上，可见内容为空
+        # 思考型模型的典型症状：token 全花在内部推理上，可见内容为空
         if not result.text:
             last_err = (
-                f"模型返回空内容（finish_reason={resp.choices[0].finish_reason}，"
-                f"reasoning_tokens={result.reasoning_tokens}）。"
-                "若是思考型模型，请调大 LLM_MAX_TOKENS 或改用非思考模型。"
+                f"模型返回空内容（finish_reason={finish}，"
+                f"reasoning_tokens={result.reasoning_tokens}/{result.completion_tokens}）。"
+                "若使用的是带思维链的模型，请调大 LLM_MAX_TOKENS，或改用非思考型模型。"
             )
             if attempt < max_retry:
                 continue
@@ -156,7 +162,7 @@ def chat(
         if not json_mode:
             return result
 
-        parsed = _extract_json(result.text)
+        parsed = extract_json(result.text)
         if parsed is None:
             last_err = "返回内容不是合法 JSON"
         elif validator is not None:
@@ -195,26 +201,23 @@ def vision(
     """多模态调用：图片 + 文字。用于 M2 错题识别。
 
     images 传原始字节即可，内部转 base64 data URL（OpenAI 兼容格式）。
-    ⚠️ 并非所有供应商/模型都支持图片输入，接入新模型前务必实测一次。
+    ⚠️ 并非所有模型都支持图片输入，接入新供应商前务必实测一次。
     """
     import base64
 
     content: list[dict] = [{"type": "text", "text": prompt_text}]
     for raw in images:
         b64 = base64.b64encode(raw).decode()
-        content.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
-            }
-        )
+        content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}})
 
     msgs = []
     if system:
         msgs.append({"role": "system", "content": system})
     msgs.append({"role": "user", "content": content})
 
-    # 部分兼容服务不支持 content 数组形式，失败时退化为纯文字请求
+    plain_msgs = ([{"role": "system", "content": system}] if system else []) + [
+        {"role": "user", "content": prompt_text}
+    ]
     try:
         return chat(
             msgs,
@@ -224,16 +227,16 @@ def vision(
             validator=validator,
         )
     except LLMError as exc:
-        if "content" in str(exc).lower() or "image" in str(exc).lower():
+        lowered = str(exc).lower()
+        if any(k in lowered for k in ("content", "image", "modalit", "unsupported")):
             plain = chat(
-                ([{"role": "system", "content": system}] if system else [])
-                + [{"role": "user", "content": prompt_text}],
+                plain_msgs,
                 purpose=purpose + "_fallback",
                 json_mode=json_mode,
                 schema_hint=schema_hint,
                 validator=validator,
             )
-            plain.text = "[视觉输入不受支持，已降级为纯文本]\n" + plain.text
+            plain.text = "[当前模型不支持图片输入，已降级为纯文本处理]\n" + plain.text
             return plain
         raise
 
@@ -241,11 +244,12 @@ def vision(
 # ---------------------------------------------------------------- JSON 工具
 
 
-def _extract_json(text: str) -> dict | None:
+def extract_json(text: str) -> dict | None:
     """从模型输出里抠出 JSON 对象。容忍 ```json 包裹和前后废话。"""
     t = text.strip()
     if t.startswith("```"):
-        t = t.split("```")[1] if "```" in t[3:] else t[3:]
+        rest = t[3:]
+        t = rest.split("```")[0] if "```" in rest else rest
         t = t.removeprefix("json").strip()
     start, end = t.find("{"), t.rfind("}")
     if start == -1 or end <= start:
@@ -258,7 +262,6 @@ def _extract_json(text: str) -> dict | None:
 
 
 # ---------------------------------------------------------------- 调用日志
-# 延迟导入 db，避免 llm_client 被独立测试时产生依赖环
 
 _LOG_CACHE: list = []
 
