@@ -12,8 +12,17 @@ from __future__ import annotations
 import json
 import pathlib
 import random
+import sys
 
 from app import db
+
+# 🔴 Windows 控制台默认 GBK，输出 emoji（🔴🟡✅）会抛 UnicodeEncodeError 直接崩退。
+#    评审照 README 执行的第一条命令就是本脚本，必须在这里兜住。
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:  # noqa: BLE001 - 重配置失败时退回 ASCII 标记
+        pass
 
 ROOT = pathlib.Path(__file__).resolve().parent
 random.seed(20261113)   # 固定种子，保证每次生成的演示数据一致、可复现
@@ -22,7 +31,7 @@ random.seed(20261113)   # 固定种子，保证每次生成的演示数据一致
 PRACTICE_PLAN = [
     ("func_quadratic_graph", 8, 3),     # 🔴 未掌握（37.5%）刻意留作最薄弱
     ("derivative_concept",   6, 2),     # 🔴 未掌握（33.3%）
-    ("func_parity",          5, 2),     # 🔴 未掌握（40.0%）
+    ("func_parity",          5, 2),     # 🟡 基本掌握（40.0%，阈值 <40 才算未掌握）
     ("log_function",         7, 4),     # 🟡 基本掌握（57.1%）
     ("trig_formula",         6, 4),     # 🟡 基本掌握（66.7%）
     ("sequence_geo",         5, 4),     # 🟡 基本掌握（80%→🟢）
