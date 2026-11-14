@@ -58,7 +58,11 @@ def kp_id_set() -> set[str]:
 
 
 def find_relevant_kps(query: str, limit: int = 5) -> list[dict]:
-    """按名称模糊匹配出与问题相关的知识点，作为 M1 回答的上下文。"""
+    """按名称或讲解内容模糊匹配知识点。
+
+    ⚠️ 仅适用于已切好的短词（如"导数"）。中文整句请直接调用
+    app.qa.retrieve_knowledge() —— 它做反向片段匹配，不受分词问题影响。
+    """
     conn = get_conn()
     try:
         rows = conn.execute(
@@ -177,13 +181,23 @@ SELECT *,
   END AS 状态
 FROM m
 ORDER BY
+  -- 🔴 三级排序键，顺序不能调：
+  --    ① 正确率为 NULL（完全没练过）永远沉底
+  --    ② 档位序：🔴未掌握(0) → 🟡基本掌握(1) → 🟢已掌握(2) → ⚪样本不足(3)
+  --       「样本不足」单独一档且不参与"最薄弱"排名（见 weak_points）：
+  --       它没有可靠数据，抢了榜首会让 M4 反复推没人练过的题。
+  --       排在最后是因为界面应当先展示有结论的知识点。
+  --    ③ 同档内按正确率升序
+  --    用 CASE 折 NULL 而不是写 NULLS LAST —— 后者需 SQLite ≥3.30，
+  --    旧版 Python 自带的库会直接报语法错误
+  CASE WHEN 正确率 IS NULL THEN 1 ELSE 0 END,
   CASE
-    WHEN 练习数 IS NULL OR 练习数 < 3 THEN 1
-    WHEN 正确率 < 40 THEN 0
-    WHEN 正确率 < 70 THEN 2
-    ELSE 3
+    WHEN 练习数 IS NOT NULL AND 练习数 >= 3 AND 正确率 < 40 THEN 0
+    WHEN 练习数 IS NOT NULL AND 练习数 >= 3 AND 正确率 < 70 THEN 1
+    WHEN 练习数 IS NOT NULL AND 练习数 >= 3                 THEN 2
+    ELSE                                                         3
   END,
-  正确率 ASC NULLS LAST;
+  正确率 ASC;
 """
 
 
