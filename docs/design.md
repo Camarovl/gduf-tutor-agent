@@ -2,10 +2,10 @@
 
 ## 一、为什么不用 LangChain / Dify
 
-### LangChain：版本地狱（实测）
+### LangChain：pydantic v1/v2 混用（已实测复现）
 
-本机环境为 `langchain==0.2.16` + `langchain-core==0.3.86` + `pydantic==2.13.3`，
-三者对 pydantic 的主版本预期不一致：
+早期原型使用 LangChain，撞上版本兼容问题 —— `langchain` 0.2.x 内部依赖 pydantic v1，
+而 `langchain-core` 0.3.x 起改用 pydantic v2，两者混装时：
 
 ```
 RuntimeError: no validator found for <class 'langchain_core.language_models.base.BaseLanguageModel'>
@@ -15,18 +15,18 @@ UserWarning: Mixing V1 and V2 models is not supported. `BaseLanguageModel` is a 
 炸点在 `langchain/memory/__init__.py` 第 48 行导入的 `ConversationSummaryMemory` ——
 我们根本没用它，但 `from langchain.memory import X` 会执行整个包的 `__init__`，被连坐。
 
-进一步验证发现 `langchain_openai` 0.1.23 也连 `import` 都过不去：
+同一条链上的 `langchain_openai` 0.1.x 甚至无法完成 import：
 
 ```
 PydanticUserError: The `__modify_schema__` method is not supported in Pydantic v2.
                    Use `__get_pydantic_json_schema__` instead in class `SecretStr`.
 ```
 
-**结论**：不是绕开 `langchain.memory` 就行，整套 LangChain 在本机都是坏的。
+**结论**：不是绕开 `langchain.memory` 就行 —— 只要 langchain 与 langchain-core 跨了 pydantic 主版本，整套都不可用。
 最终改用 `openai` SDK 直连（OpenAI 兼容协议），依赖链最短。
 
-顺带一个好处：上下文如何拼装全部显式写在代码里，答辩时能直接指出"这段就是拼 prompt"，
-而不是说"框架帮我管的"。
+附带的好处是：上下文如何拼装全部显式写在代码里，读代码就能看懂 prompt 是怎么组织的，
+不必去翻框架的封装层。
 
 ### Dify 等低代码平台：技术栈错位
 

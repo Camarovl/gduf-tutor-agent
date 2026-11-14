@@ -42,9 +42,9 @@ pandas 2.3            表格与图表数据
 Dockerfile            python:3.11-slim 容器化
 ```
 
-⚠️ **没有使用 LangChain**。本机 langchain 0.2.16 与 langchain-core 0.3.86 混用 pydantic v1/v2，
-import 阶段即报 `RuntimeError: no validator found for BaseLanguageModel`。改用 openai SDK 直连后
-链路更短，上下文如何拼装也一目了然 —— 详见 [docs/design.md](docs/design.md)。
+⚠️ **没有使用 LangChain**。`langchain` 0.2.x 内部依赖 pydantic v1，而 `langchain-core` 0.3.x 起
+改用 v2，两者混装在 import 阶段即报 `RuntimeError: no validator found for BaseLanguageModel`。
+改用 openai SDK 直连后链路更短，上下文如何拼装也一目了然 —— 详见 [docs/design.md](docs/design.md)。
 
 ### 目录结构
 
@@ -177,14 +177,14 @@ M2 七种畸形输出是否都被拒、M4 判分逻辑、以及未配置时的�
 
 ## 五、Docker 运行
 
-> ⚠️ **本项目的 Dockerfile 尚未经实机构建验证** —— 开发机未安装 Docker，
+> ⚠️ **本项目的 Dockerfile 尚未经实机构建验证** —— 当前环境未安装 Docker，
 > 以下命令按文档编写但从未跑通。提交前必须在装了 Docker 的机器上完整执行一遍。
 
 ```powershell
 # Windows PowerShell
 docker build -t gduf-tutor .
 docker run -d -p 8501:8501 -e LLM_BASE_URL="https://..." -e LLM_API_KEY="sk-..." `
-           -e LLM_MODEL=qwen3.8-flash -v "${PWD}\data:/app/data" --name tutor gduf-tutor
+           -e LLM_MODEL=你配置的模型名 -v "${PWD}\data:/app/data" --name tutor gduf-tutor
 docker exec tutor python seed_data.py     # 容器内首次需灌演示数据
 ```
 
@@ -192,7 +192,7 @@ docker exec tutor python seed_data.py     # 容器内首次需灌演示数据
 # Linux / macOS
 docker build -t gduf-tutor .
 docker run -d -p 8501:8501 -e LLM_BASE_URL="https://..." -e LLM_API_KEY="sk-..." \
-           -e LLM_MODEL=qwen3.8-flash -v "$(pwd)/data:/app/data" --name tutor gduf-tutor
+           -e LLM_MODEL=你配置的模型名 -v "$(pwd)/data:/app/data" --name tutor gduf-tutor
 docker exec tutor python seed_data.py
 ```
 
@@ -227,14 +227,14 @@ docker exec tutor python seed_data.py
 
 | 代号 | 职责 | 主要负责文件 |
 |---|---|---|
-| A（组长） | 定范围、催进度、拍板砍功能、答辩主讲、合并 PR | `docs/` |
+| A（维护者） | 定范围、催进度、拍板砍功能、对外讲解、合并 PR | `docs/` |
 | B | 模型调用封装、prompt 设计与调优、输出校验 | `app/llm_client.py`、`app/prompts.py`、`app/schemas.py` |
 | C | 表结构、归类规则、统计口径 | `schema.sql`、`app/db.py`、`app/intake.py`、`app/profile.py` |
 | D | 页面交互、图片上传、演示数据 | `streamlit_app.py`、`seed_data.py`、`data/*.json` |
 | E | 仓库规范、三个 ignore、Dockerfile、部署、README | `Dockerfile`、`README.md`、`.gitignore` |
 
 协作规矩见 [docs/collaboration.md](docs/collaboration.md)：一人一分支、改动走 PR、
-由组长合并、全组禁用 `git push --force`。
+由维护者合并、全员禁用 `git push --force`。
 
 ---
 
