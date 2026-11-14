@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from app import db, profile, schemas  # noqa: E402
+from app import db, profile, qa, schemas  # noqa: E402
 
 PASS, FAIL = "✅", "❌"
 results: list[tuple[str, bool]] = []
@@ -103,6 +103,27 @@ finally:
     for k, val in saved.items():
         if val is not None:
             os.environ[k] = val
+
+# ---------------------------------------------------------------- 7. M1 知识点检索（中文分词陷阱回归测试）
+# 🔴 曾经的 bug：用 question.split() 切中文句子，结果是整句话一个 token，
+#    LIKE 查询永远命中 0 条 —— 功能表面正常，但"限定学科"的实质约束静默失效。
+check("检索「导数」能命中相关知识点", len(qa.retrieve_knowledge("什么是导数？举一个例子")) > 0)
+check("检索「二次函数最值」命中且排序合理",
+      "二次函数" in qa.retrieve_knowledge("二次函数在闭区间上的最大值怎么求")[0]["name"])
+check("越界问题不命中任何知识点", len(qa.retrieve_knowledge("帮我写一篇英语作文")) == 0)
+check("上下文拼装带上常见误区",
+      "常见误区" in qa._format_context(qa.retrieve_knowledge("等差数列前n项和怎么算")))
+
+# ---------------------------------------------------------------- 8. NULL 沉底（跨 SQLite 版本兼容写法）
+null_rows = df[df["正确率"].isna()]
+if len(null_rows):
+    first_null_pos = int(df.index.get_loc(null_rows.index[0]))
+    check(f"正确率为 NULL 的 {len(null_rows)} 行全部排在末尾",
+          first_null_pos == len(df) - len(null_rows))
+tiers = [df.iloc[i]["状态"] for i in range(len(df)) if df.iloc[i]["正确率"] == df.iloc[i]["正确率"]]
+tier_rank = {"🔴 未掌握": 0, "🟡 基本掌握": 1, "🟢 已掌握": 2, "⚪ 样本不足": 3}
+seq = [tier_rank[t] for t in tiers]
+check(f"档位顺序单调不回退（实测序列 {seq[:6]}…）", seq == sorted(seq))
 
 # ---------------------------------------------------------------- 输出
 width = max(len(n) for n, _ in results)
