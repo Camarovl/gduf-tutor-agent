@@ -1,0 +1,110 @@
+[
+  {
+    "id": "q001",
+    "kp_id": "func_quadratic_graph",
+    "type": "single_choice",
+    "question": "函数 f(x)=x²-2x+3 在区间 [0,3] 上的最大值是",
+    "options": {"A": "2", "B": "3", "C": "6", "D": "8"},
+    "answer": "C",
+    "explanation": "配方得 f(x)=(x-1)²+2，对称轴 x=1 落在区间内且开口向上，故最小值在顶点 f(1)=2；最大值在离对称轴较远的端点取得，f(0)=3、f(3)=6，所以最大值为 6。"
+  },
+  {
+    "id": "q002",
+    "kp_id": "func_quadratic_graph",
+    "type": "single_choice",
+    "question": "二次函数 y=-2x²+4x+1 的单调递增区间是",
+    "options": {"A": "(-∞,1]", "B": "[1,+∞)", "C": "(-∞,2]", "D": "[2,+∞)"},
+    "answer": "A",
+    "explanation": "a=-2<0 开口向下，对称轴 x=-b/(2a)=-4/(-4)=1，因此递增区间为 (-∞,1]。选 B 是把开口方向判断错了。"
+  },
+  {
+    "id": "q003",
+    "kp_id": "derivative_concept",
+    "type": "single_choice",
+    "question": "曲线 y=x³ 在过点 (1,1) 的切线方程共有几条",
+    "options": {"A": "1 条", "B": "2 条", "C": "3 条", "D": "0 条"},
+    "answer": "B",
+    "explanation": "题中说'过点'而非'在某点处'，(1,1) 未必是切点。设切点 (t,t³)，斜率 3t²，切线过 (1,1) 代入解得 t=1 或 t=1/2（重根情形需具体计算），共两条。这是最常见的失分点。"
+  },
+  {
+    "id": "q004",
+    "kp_id": "func_parity",
+    "type": "single_choice",
+    "question": "下列函数中为奇函数的是",
+    "options": {"A": "f(x)=x²+1", "B": "f(x)=x³+1", "C": "f(x)=ln(√(x²+1)-x)", "D": "f(x)=|x|"},
+    "answer": "C",
+    "explanation": "先验定义域是否关于原点对称，再验证 f(-x)=-f(x)。C 中 (√(x²+1)-x) 与 (√(x²+1)+x) 互为倒数，故 f(-x)=ln(1/(√(x²+1)-x))=-f(x)，是奇函数。A、D 为偶函数；B 因常数项 +1 使 f(0)≠0，非奇非偶。"
+  },
+  {
+    "id": "q005",
+    "kp_id": "log_function",
+    "type": "fill_blank",
+    "question": "计算 log₂8 + log₃(1/9) = ______（用数字作答）",
+    "options": null,
+    "answer": "1",
+    "explanation": "log₂8=3（因为 2³=8）；log₃(1/9)=log₃(3⁻²)=-2。相加得 3+(-2)=1。高频错误是把 log₃(1/9) 算成 2，丢掉负号。"
+  },
+  {
+    "id": "q006",
+    "kp_id": "sequence_arith",
+    "type": "single_choice",
+    "question": "等差数列 {aₙ} 中 a₃=7，a₇=15，则 a₁₀ =",
+    "options": {"A": "20", "B": "21", "C": "22", "D": "23"},
+    "answer": "B",
+    "explanation": "公差 d=(a₇-a₃)/(7-3)=(15-7)/4=2。a₁₀=a₇+3d=15+6=21。错选 A 通常是把 a₁₀ 当成 a₇+2.5d 之类估算失误。"
+  },
+  {
+    "id": "q007",
+    "kp_id": "sequence_geo",
+    "type": "single_choice",
+    "question": "等比数列 {aₙ} 中 a₁=1，公比 q=2，则前 5 项和 S₅ =",
+    "options": {"A": "15", "B": "16", "C": "31", "D": "32"},
+    "answer": "C",
+    "explanation": "S₅=a₁(1-q⁵)/(1-q)=(1-32)/(1-2)=31。逐项相加 1+2+4+8+16=31 可作验算。错选 B/D 多为指数运算 q⁵=16 之类的失误；若忘记公式直接用等差思路会得到不同结果。"
+  },
+  {
+    "id": "q008",
+    "kp_id": "trig_formula",
+    "type": "single_choice",
+    "question": "已知 sin α = 3/5 且 α 为第二象限角，则 cos α =",
+    "options": {"A": "4/5", "B": "-4/5", "C": "3/4", "D": "-3/4"},
+    "answer": "B",
+    "explanation": "由 sin²α+cos²α=1 得 |cos α|=4/5。α 在第二象限，余弦为负，故 cos α=-4/5。错选 A 是没有根据象限定号——这正是本知识点的高频误区。"
+  },
+  {
+    "id": "q009",
+    "kp_id": "vector_dot",
+    "type": "single_choice",
+    "question": "向量 a=(1,2)，b=(x,-1)，若 a⊥b，则 x =",
+    "options": {"A": "-2", "B": "2", "C": "1/2", "D": "-1/2"},
+    "answer": "B",
+    "explanation": "垂直充要条件 a·b=0，即 1·x+2·(-1)=x-2=0，解得 x=2。错选 A 通常是把点积算成 1·x-2·(-1)。"
+  },
+  {
+    "id": "q010",
+    "kp_id": "inequality_basic",
+    "type": "single_choice",
+    "question": "不等式 x²-3x+2<0 的解集是",
+    "options": {"A": "(-∞,1)∪(2,+∞)", "B": "[1,2]", "C": "(1,2)", "D": "(-2,-1)"},
+    "answer": "C",
+    "explanation": "因式分解 (x-1)(x-2)<0，对应方程两根为 1 和 2，抛物线开口向上，小于零取两根之间，即 (1,2)。选 A 是把大于号和小于号的解集结构记反。"
+  },
+  {
+    "id": "q011",
+    "kp_id": "derivative_application",
+    "type": "single_choice",
+    "question": "函数 f(x)=x³-3x 的极小值点是",
+    "options": {"A": "x=-1", "B": "x=1", "C": "x=0", "D": "x=3"},
+    "answer": "B",
+    "explanation": "f'(x)=3x²-3=3(x-1)(x+1)，驻点 x=±1。列表可知 x=-1 处由增变减为极大值点，x=1 处由减变增为极小值点。错选 A 是不区分极大极小。"
+  },
+  {
+    "id": "q012",
+    "kp_id": "set_basic",
+    "type": "single_choice",
+    "question": "集合 A={x|x²-x=0}，B={0,1,2}，则 A∩B =",
+    "options": {"A": "{0}", "B": "{0,1}", "C": "{1,2}", "D": "{0,1,2}"},
+    "answer": "B",
+    "explanation": "解 x²-x=x(x-1)=0 得 A={0,1}，与 B={0,1,2} 取公共元素得 {0,1}。错选 D 是把并集当成了交集。"
+  }
+]
